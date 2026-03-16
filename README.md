@@ -1,10 +1,11 @@
-# AIRE - AI Runtime Environment
+# AIRE - AI Reliability Engineering
 
+## Lab 1
 A bare-metal Kubernetes setup with [agentgateway](https://agentgateway.dev) and [kagent](https://kagent.dev) for running AI agents on your own infrastructure.
 
 ---
 
-## Table of Contents
+### Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [1. Kubernetes Cluster Setup](#1-kubernetes-cluster-setup)
@@ -29,7 +30,7 @@ A bare-metal Kubernetes setup with [agentgateway](https://agentgateway.dev) and 
 
 ---
 
-## Prerequisites
+### Prerequisites
 
 - A VM or bare-metal server with `kubeadm`, `kubectl`, and `helm` installed
 - Docker or containerd as the container runtime
@@ -38,15 +39,15 @@ A bare-metal Kubernetes setup with [agentgateway](https://agentgateway.dev) and 
 
 ---
 
-## 1. Kubernetes Cluster Setup
+### 1. Kubernetes Cluster Setup
 
-### 1.1 Initialize the cluster
+#### 1.1 Initialize the cluster
 
 ```bash
 kubeadm init --control-plane-endpoint ec2-100-52-110-239.compute-1.amazonaws.com
 ```
 
-### 1.2 Install CNI (Flannel)
+#### 1.2 Install CNI (Flannel)
 
 ```bash
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
@@ -66,7 +67,7 @@ Then restart kubelet:
 sudo systemctl restart kubelet
 ```
 
-### 1.3 Single-node setup (control plane + worker on same VM)
+#### 1.3 Single-node setup (control plane + worker on same VM)
 
 Remove the control-plane taint and load balancer exclusion label so workloads can be scheduled:
 
@@ -75,7 +76,7 @@ kubectl taint nodes --all node-role.kubernetes.io/control-plane-
 kubectl label nodes --all node.kubernetes.io/exclude-from-external-load-balancers-
 ```
 
-### 1.4 Install MetalLB (bare-metal load balancer)
+#### 1.4 Install MetalLB (bare-metal load balancer)
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/config/manifests/metallb-native.yaml
@@ -89,18 +90,18 @@ kubectl apply -f network/ip-pool.yaml
 
 ---
 
-## 2. Install agentgateway
+### 2. Install agentgateway
 
 agentgateway acts as an AI-aware proxy that routes traffic to LLM backends.
 
-### 2.1 Install Kubernetes Gateway API CRDs
+#### 2.1 Install Kubernetes Gateway API CRDs
 
 ```bash
 kubectl apply --server-side -f \
   https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml
 ```
 
-### 2.2 Install agentgateway CRDs
+#### 2.2 Install agentgateway CRDs
 
 ```bash
 helm upgrade -i --create-namespace \
@@ -109,7 +110,7 @@ helm upgrade -i --create-namespace \
   agentgateway-crds oci://cr.agentgateway.dev/charts/agentgateway-crds
 ```
 
-### 2.3 Install agentgateway
+#### 2.3 Install agentgateway
 
 ```bash
 helm upgrade -i -n agentgateway-system \
@@ -117,7 +118,7 @@ helm upgrade -i -n agentgateway-system \
   --version v1.0.0-rc.1
 ```
 
-### 2.4 Deploy the agentgateway proxy
+#### 2.4 Deploy the agentgateway proxy
 
 ```bash
 kubectl apply -f helm/agentgateway/agentgateway-proxy.yaml
@@ -130,7 +131,7 @@ kubectl get gateway agentgateway-proxy -n agentgateway-system
 kubectl get deployment agentgateway-proxy -n agentgateway-system
 ```
 
-### 2.5 Configure an LLM backend (Google Gemini)
+#### 2.5 Configure an LLM backend (Google Gemini)
 
 Create the API key secret (update the value with your key first):
 
@@ -152,18 +153,18 @@ kubectl apply -f helm/agentgateway/http-route.yaml
 
 ---
 
-## 3. Install kagent
+### 3. Install kagent
 
 kagent provides a set of Kubernetes-native AI agents managed via Helm.
 
-### 3.1 Install kagent CRDs
+#### 3.1 Install kagent CRDs
 
 ```bash
 helm install kagent-crds oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
   --namespace kagent --create-namespace
 ```
 
-### 3.2 Configure kagent
+#### 3.2 Configure kagent
 
 Edit `helm/kagent/values.yaml` to enable or disable agents and set your default provider:
 
@@ -189,7 +190,7 @@ helm install -f helm/kagent/values.yaml kagent \
   --namespace kagent
 ```
 
-### 3.4 Configure LLM provider credentials
+#### 3.4 Configure LLM provider credentials
 
 Apply the secret and model config for your chosen provider:
 
@@ -212,7 +213,7 @@ kubectl apply -f kagent/openai-model-config.yaml
 
 ---
 
-### 3.5 Accessing the UI
+#### 3.5 Accessing the UI
 
 **Option 1 — localhost only:**
 
@@ -230,7 +231,7 @@ Then open: `http://localhost:8080` or `http://<CLUSTER_EXTERNAL_IP>:8080`
 
 ---
 
-### 3.6 Useful Commands
+#### 3.6 Useful Commands
 
 ```bash
 # List all kagent resources
@@ -248,7 +249,7 @@ kubectl -n kagent logs -l app.kubernetes.io/component=controller -f
 
 ---
 
-### 3.7 Troubleshooting
+#### 3.7 Troubleshooting
 
 | Symptom | Command |
 |---|---|
